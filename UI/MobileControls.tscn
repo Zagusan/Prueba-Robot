@@ -1,0 +1,195 @@
+[gd_scene load_steps=13 format=3 uid="uid://y1na5fg0rcw1"]
+
+[ext_resource type="Texture2D" uid="uid://uuq1xqoqxd54" path="res://UI/Icons/move-up.svg" id="1_jw83m"]
+[ext_resource type="Script" path="res://Scripts/UI/MobileControls.gd" id="1_m4830"]
+[ext_resource type="Texture2D" uid="uid://dje21xf0m71gs" path="res://UI/Icons/move-up-left.svg" id="1_ureef"]
+[ext_resource type="Texture2D" uid="uid://h718wom7yagr" path="res://UI/Icons/move-right.svg" id="2_i64we"]
+[ext_resource type="Texture2D" uid="uid://b0utkheo0oj66" path="res://UI/Icons/move-down.svg" id="3_0njt2"]
+[ext_resource type="Texture2D" uid="uid://73lihyhdsion" path="res://UI/Icons/move-up-right.svg" id="3_rw77m"]
+[ext_resource type="Texture2D" uid="uid://cxfcdrxf6vmpd" path="res://UI/Icons/move-left.svg" id="4_gxvuh"]
+[ext_resource type="Texture2D" uid="uid://deoq8527qk57e" path="res://UI/Icons/switch-camera.svg" id="5_fdflt"]
+[ext_resource type="Texture2D" uid="uid://bhl5jramchl4i" path="res://UI/Icons/move-down-left.svg" id="7_gv5mo"]
+[ext_resource type="Texture2D" uid="uid://c84aflvli8glh" path="res://UI/Icons/move-down-right.svg" id="9_rmi0w"]
+[ext_resource type="Texture2D" uid="uid://eowccinof35y" path="res://UI/Icons/corner-right-up.svg" id="10_kajyo"]
+[ext_resource type="Texture2D" uid="uid://blvia2uvritc6" path="res://UI/Icons/corner-right-down.svg" id="11_87t3v"]
+
+[node name="MobileControls" type="Control"]
+layout_mode = 3
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+grow_vertical = 0
+scale = Vector2(2, 2)
+script = ExtResource("1_m4830")
+
+[node name="CornerMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -200.0
+offset_right = 200.0
+grow_vertical = 0
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CornerMargin"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+theme_override_constants/separation = 30
+
+[node name="2DMovement" type="GridContainer" parent="CornerMargin/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+columns = 3
+
+[node name="UpLeft" type="Button" parent="CornerMargin/HBoxContainer/2DMovement"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("1_ureef")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Up" type="Button" parent="CornerMargin/HBoxContainer/2DMovement"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("1_jw83m")
+icon_alignment = 1
+expand_icon = true
+
+[node name="UpRight" type="Button" parent="CornerMargin/HBoxContainer/2DMovement"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("3_rw77m")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Left" type="Button" parent="CornerMargin/HBoxContainer/2DMovement"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("4_gxvuh")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Center" type="Button" parent="CornerMargin/HBoxContainer/2DMovement"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("5_fdflt")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Right" type="Button" parent="CornerMargin/HBoxContainer/2DMovement"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("2_i64we")
+icon_alignment = 1
+expand_icon = true
+
+[node name="DownLeft" type="Button" parent="CornerMargin/HBoxContainer/2DMovement"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("7_gv5mo")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Down" type="Button" parent="CornerMargin/HBoxContainer/2DMovement"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("3_0njt2")
+icon_alignment = 1
+expand_icon = true
+
+[node name="DownRight" type="Button" parent="CornerMargin/HBoxContainer/2DMovement"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("9_rmi0w")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Height" type="VBoxContainer" parent="CornerMargin/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Increase" type="Button" parent="CornerMargin/HBoxContainer/Height"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("10_kajyo")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Decrease" type="Button" parent="CornerMargin/HBoxContainer/Height"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 50
+action_mode = 0
+icon = ExtResource("11_87t3v")
+icon_alignment = 1
+expand_icon = true
+
+[connection signal="button_down" from="CornerMargin/HBoxContainer/2DMovement/UpLeft" to="." method="_on_up_left_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/2DMovement/UpLeft" to="." method="_on_up_left_button_up"]
+[connection signal="button_down" from="CornerMargin/HBoxContainer/2DMovement/Up" to="." method="_on_up_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/2DMovement/Up" to="." method="_on_up_button_up"]
+[connection signal="button_down" from="CornerMargin/HBoxContainer/2DMovement/UpRight" to="." method="_on_up_right_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/2DMovement/UpRight" to="." method="_on_up_right_button_up"]
+[connection signal="button_down" from="CornerMargin/HBoxContainer/2DMovement/Left" to="." method="_on_left_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/2DMovement/Left" to="." method="_on_left_button_up"]
+[connection signal="button_down" from="CornerMargin/HBoxContainer/2DMovement/Center" to="." method="_on_center_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/2DMovement/Center" to="." method="_on_center_button_up"]
+[connection signal="button_down" from="CornerMargin/HBoxContainer/2DMovement/Right" to="." method="_on_right_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/2DMovement/Right" to="." method="_on_right_button_up"]
+[connection signal="button_down" from="CornerMargin/HBoxContainer/2DMovement/DownLeft" to="." method="_on_down_left_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/2DMovement/DownLeft" to="." method="_on_down_left_button_up"]
+[connection signal="button_down" from="CornerMargin/HBoxContainer/2DMovement/Down" to="." method="_on_down_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/2DMovement/Down" to="." method="_on_down_button_up"]
+[connection signal="button_down" from="CornerMargin/HBoxContainer/2DMovement/DownRight" to="." method="_on_down_right_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/2DMovement/DownRight" to="." method="_on_down_right_button_up"]
+[connection signal="button_down" from="CornerMargin/HBoxContainer/Height/Increase" to="." method="_on_increase_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/Height/Increase" to="." method="_on_increase_button_up"]
+[connection signal="button_down" from="CornerMargin/HBoxContainer/Height/Decrease" to="." method="_on_decrease_button_down"]
+[connection signal="button_up" from="CornerMargin/HBoxContainer/Height/Decrease" to="." method="_on_decrease_button_up"]
