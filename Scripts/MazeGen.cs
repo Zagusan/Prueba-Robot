@@ -1,38 +1,56 @@
 using Godot;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using static Godot.Control;
-using static Godot.TextServer;
-using static System.Net.Mime.MediaTypeNames;
+using System.Threading.Tasks;
 
 public partial class MazeGen : GridMap
 {
+	[Signal]
+	public delegate void ProgressReportEventHandler(int cellsPlaced);
+	[Signal]
+	public delegate void GenerationDoneEventHandler();
 
 	[Export]
 	public Vector2I size = new(20, 20);
 	[Export]
 	public double waitTime = 0;
-	[Export]
-	public bool deferred = false;
-	[Export]
-	public bool multithreading = false;
 
 	static readonly RandomNumberGenerator randomNumber = new();
 
-	uint placementCount = 0;
+	int cellsPlaced = 0;
 
+	// Cell in the GridMap before the processing is done
 	public class Tile
 	{
 		public bool visited = false;
 		public bool[] walls = {true, true, true, true};
 	}
+	// Tile but after the code finished processing it
+	public class Cell
+	{
+		public Vector3I gridMapPosition;
+		public WallType wallType;
+		public int orientation;
+		public bool alreadyPlaced;
 
-    private Tile[,] grid;
+		public Cell(Vector3I gridMapPosition, WallType wallType, int orientation, bool alreadyPlaced)
+		{
+			this.gridMapPosition = gridMapPosition;
+			this.wallType = wallType;
+			this.orientation = orientation;
+			this.alreadyPlaced = alreadyPlaced;
+		}
+	}
 
-    // Explains how to access the Tile.walls array
-    enum Directions: int
+	private Tile[,] grid;
+	readonly ConcurrentQueue<Cell> cellQueue = new();
+
+	// Explains how to access the Tile.walls array
+	public enum Directions: int
 	{
 		up = 0,
 		right = 1,
@@ -40,7 +58,7 @@ public partial class MazeGen : GridMap
 		left = 3
 	}
 	// Values based on the indexes provided by the MeshLibrary
-	enum WallType: int
+	public enum WallType: int
 	{
 		empty = 0,
 		hallway = 1,
@@ -52,34 +70,115 @@ public partial class MazeGen : GridMap
 	/* It's an array so that I can just use the directions enum, avoiding
 	 * more converter functions and making it easier to work with
 	 * Also don't ask me why these values, that's just how GridMaps work */
-	int[] orientations = {0, 22, 10, 16};
+	 int[] orientations = {0, 22, 10, 16};
 
-	Thread generate;
-
-	public void OnGenerationRequest(Vector2I requestedSize, double requestedTime)
+	private void PlaceFromQueue()
 	{
-		size = requestedSize;
-		waitTime = requestedTime;
-		if (multithreading)
+		if (cellQueue.TryDequeue(out Cell currentCell))
 		{
-            generate = new(Generate);
-            generate.Start();
-        }
-		else
-		{
-            Generate();
-        }
+			this.SetCellItem(currentCell.gridMapPosition, (int)currentCell.wallType, currentCell.orientation);
+			// Adds to cellsPlaced if alreadyPlaced is false
+			cellsPlaced += currentCell.alreadyPlaced ? 0 : 1;
+		}
 	}
 
-    public override void _ExitTree()
-    {
-        if (multithreading)
-		{
-			generate.Join();
-		}
-    }
+	Task generationTask;
+	CancellationTokenSource tokenSource;
 
-    private static Directions ToDirection(Vector2I vector)
+	public async void OnGenerationRequest(Vector2I requestedSize, double requestedTime)
+	{
+		if (!cellQueue.IsEmpty)
+		{
+			return;
+		}
+
+		tokenSource = new();
+
+		size = requestedSize;
+		waitTime = requestedTime;
+
+		generationTask = new(() => Generate(tokenSource.Token), tokenSource.Token);
+		generationTask.Start();
+
+		if(requestedTime == 0)
+		{
+			// Places cells as soon as possible
+			this.SetProcess(true);
+		}
+		else
+		{
+            TimeSpan timeSpan = TimeSpan.FromTicks((long)(requestedTime * TimeSpan.TicksPerSecond));
+            while (!(cellQueue.IsEmpty && generationTask.IsCompleted))
+			{
+				PlaceFromQueue();
+				EmitSignal(SignalName.ProgressReport, cellsPlaced);
+
+                Task waitTask = Task.Delay(timeSpan, tokenSource.Token);
+				try
+				{
+					await waitTask;
+				}
+				catch (OperationCanceledException)
+                {
+
+				}
+				finally
+				{
+					waitTask.Dispose();
+				}
+            }
+			EmitSignal(SignalName.GenerationDone);
+            tokenSource.Dispose();
+			cellsPlaced = 0;
+        }
+		await generationTask;
+		// IDisposables should always be cleaned manually
+		generationTask.Dispose();
+	}
+
+	public void CancelGeneration()
+	{
+		if (generationTask.IsCompleted)
+		{
+			tokenSource.Cancel();
+		}
+		cellQueue.Clear();
+		cellsPlaced = 0;
+	}
+
+	// Prevents _Process from inmediately running
+	public override void _Ready()
+	{
+		this.SetProcess(false);
+	}
+
+	// Deals with the cellQueue
+	readonly Stopwatch queueStopwatch = new();
+	double ticksPerMs = Stopwatch.Frequency / 10e3;
+	public override void _Process(double delta)
+	{
+		queueStopwatch.Restart();
+		while (queueStopwatch.ElapsedTicks / ticksPerMs < 4)
+		{
+			if (cellQueue.IsEmpty)
+			{
+				if (generationTask.IsCompleted)
+				{
+					EmitSignal(SignalName.GenerationDone);
+                    tokenSource.Dispose();
+                    cellsPlaced = 0;
+					this.SetProcess(false);
+				}
+			}
+			else
+			{
+				PlaceFromQueue();
+			}
+		}
+		EmitSignal(SignalName.ProgressReport, cellsPlaced);
+	}
+
+	private static Directions ToDirection(Vector2I vector)
 	{
 		// Doesn't use a switch statement because it doesn't work with vectors
 		if (vector == Vector2I.Up)
@@ -104,8 +203,8 @@ public partial class MazeGen : GridMap
 
 	private bool IsVectorInSizeRange(Vector2I vector)
 	{
-        // Checks every component individually (The < operator doesn't work for this)
-        if (vector.X >= 0 && vector.X < size.X && vector.Y >= 0 && vector.Y < size.Y)
+		// Checks every component individually (The < operator doesn't work for this)
+		if (vector.X >= 0 && vector.X < size.X && vector.Y >= 0 && vector.Y < size.Y)
 		{
 			return true;
 		}
@@ -223,31 +322,17 @@ public partial class MazeGen : GridMap
 		}
 	}
 
-	private SignalAwaiter Timer(double time)
-	{
-		return ToSignal(GetTree().CreateTimer(time), "timeout");
-	}
-
-	private void PlaceTileDeferred(Tile tile, Vector2I position)
+	private void QueuePlacement(Tile tile, Vector2I position, bool alreadyPlaced)
 	{
 		Vector3I gridMapPosition = new(position.X, 0, position.Y);
 		WallType type = GetWallType(tile);
 		Directions orientation = GetOrientation(tile, type);
 
-		if(deferred)
-		{
-			this.CallDeferred(MethodName.SetCellItem, gridMapPosition, (int)type, orientations[(int)orientation]);
-		}
-		else
-		{
-			SetCellItem(gridMapPosition, (int)type, orientations[(int)orientation]);
-		}
-		placementCount++;
-    }
+		cellQueue.Enqueue(new Cell(gridMapPosition, type, orientations[(int)orientation], alreadyPlaced));
+	}
 
-	public async void Generate()
+	public void Generate(CancellationToken token)
 	{
-		// ulong start = Time.GetTicksUsec();
 
 		this.Clear();
 
@@ -266,14 +351,8 @@ public partial class MazeGen : GridMap
 		int tilesPlaced = 0;
 		bool goingBack = false;
 		// Iterates through all of the 2D array
-		while(tilesPlaced < gridMagnitude)
+		while(tilesPlaced < gridMagnitude && !token.IsCancellationRequested)
 		{
-			// UX choice so that the user has time to get into position
-			if (waitTime > 0)
-			{
-				await Timer(waitTime);
-			}
-
 			Tile currentTile = grid[current.X, current.Y];
 
 			List<Vector2I> unvisitedNeighbors = GetUnvisitedNeighbors(grid, current);
@@ -293,9 +372,9 @@ public partial class MazeGen : GridMap
 				nextTile.visited = true;
 
 				// Needs to be run here because there can't be further updates to the tile once placed
-				PlaceTileDeferred(currentTile, current);
-                // Only adds to tiles placed if not going back
-                tilesPlaced += goingBack ? 0 : 1;
+				QueuePlacement(currentTile, current, goingBack);
+				// Only adds to tiles placed if not going back
+				tilesPlaced += goingBack ? 0 : 1;
 
 				current = next;
 				goingBack = false;
@@ -305,14 +384,12 @@ public partial class MazeGen : GridMap
 				// Places the current tile if it's the first time going back
 				if (!goingBack)
 				{
-					PlaceTileDeferred(currentTile, current);
+					QueuePlacement(currentTile, current, false);
 					tilesPlaced++;
 				}
 				current = stack.Pop();
 				goingBack = true;
 			}
 		}
-        // GD.Print("Maze generated in " + (Time.GetTicksUsec() - start) * 10e-6 + " seconds");
-        GD.Print("Placed " + placementCount, " tiles since the start of the program");
 	}
 }
